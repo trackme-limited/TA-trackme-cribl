@@ -1,0 +1,20 @@
+#.gitignore
+
+# Mac OS X cached files
+.DS_Store
+
+# Visual Basic Code
+.vscode
+
+# output
+output/*
+!output/README.txt
+
+# Python pickle
+*.pickle
+
+# Py build
+build/libs/__pycache__
+
+# Py compiled
+*.pyc

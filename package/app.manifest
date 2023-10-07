@@ -1,0 +1,57 @@
+{
+  "schemaVersion": "2.0.0",
+  "info": {
+    "title": "TA-trackme-cribl",
+    "id": {
+      "group": null,
+      "name": "TA-trackme-cribl",
+      "version": "1.0.0"
+    },
+    "author": [
+      {
+        "name": "TrackMe Limited, U.K.",
+        "email": "contact@trackme-solutions.com",
+        "company": "TrackMe Limied, U.K."
+      }
+    ],
+    "releaseDate": null,
+    "description": "Cribl API integration for TrackMe",
+    "classification": {
+      "intendedAudience": "IT",
+      "categories": [
+        "IT Operations"
+      ],
+      "developmentStatus": "Production/Stable"
+    },
+    "commonInformationModels": null,
+    "license": {
+      "name": "TrackMe EULA",
+      "text": null,
+      "uri": "https://trackme.readthedocs.io/en/latest/license.html"
+    },
+    "privacyPolicy": {
+      "name": null,
+      "text": null,
+      "uri": null
+    },
+    "releaseNotes": {
+      "name": null,
+      "text": null,
+      "uri": null
+    }
+  },
+  "dependencies": null,
+  "tasks": null,
+  "inputGroups": null,
+  "incompatibleApps": null,
+  "platformRequirements": null,
+  "supportedDeployments": [
+    "_standalone",
+    "_distributed",
+    "_search_head_clustering"
+  ],
+  "targetWorkloads": [
+    "_search_heads",
+    "_indexers"
+  ]
+}

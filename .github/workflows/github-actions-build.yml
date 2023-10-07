@@ -1,0 +1,171 @@
+name: Python package
+
+on: [push]
+
+jobs:
+  build_release:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10"]
+
+    steps:
+      - run: echo "job automatically triggered by a ${{ github.event_name }} event."
+
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Python requirements
+        run: |
+          pip install -r requirements.txt
+
+      #
+      # Build release for unit testing
+      #
+
+      - name: Build the pre-release
+        run: |
+          cd build; python3 build.py --keep
+        id: build_pre_release
+
+      #
+      # Unit testsings
+      #
+
+      - name: Run unit testings
+        run: |
+          cd unit_tests;
+          export SPLUNK_HOME="/opt/splunk"
+          for file in *.py
+          do
+            python $file || exit 1
+          done
+        id: python_unit_testings
+
+      #
+      # Build release and run Appinspect
+      #
+
+      - name: Build the release and submit to Splunk Appinspect vetting
+        env:
+          SPLUNK_BASE_LOGIN: ${{ vars.SPLUNK_BASE_LOGIN }}
+          SPLUNK_BASE_PASSWD: ${{ secrets.SPLUNK_BASE_PASSWD }}
+        run: |
+          cd build; python3 build.py --keep --submitappinspect --userappinspect "$SPLUNK_BASE_LOGIN" --passappinspect "$SPLUNK_BASE_PASSWD"
+        id: build_and_submit_appinspect
+
+      # set a git check
+      - name: Set GitHub check
+        uses: LouisBrunner/checks-action@v1.6.0
+        if: always()
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          name: Appinspect vetting
+          conclusion: ${{ job.status }}
+          output: |
+            {"summary":"${{ steps.build_and_submit_appinspect.outputs.summary }}"}
+
+      #
+      # Archive artifacts
+      #
+
+      - name: Archive Appinspect html report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: appinspect-report-html
+          path: output/report_appinspect.html
+
+      - name: Archive Appinspect json report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: appinspect-report-json
+          path: output/report_appinspect.json
+
+      - name: Show output directory content
+        run: |
+          ls -ltr output/
+
+      - name: Retrieve version number
+        run: |
+          echo "VERSION_NUMBER=$(cat output/version.txt)" >> $GITHUB_ENV
+
+      - name: Show version number
+        run: |
+          echo "Version number is ${{ env.VERSION_NUMBER }}"
+
+      - name: Retrieve build number
+        run: |
+          echo "BUILD_NUMBER=$(cat output/build.txt)" >> $GITHUB_ENV
+
+      - name: Show build number
+        run: |
+          echo "Build number is ${{ env.BUILD_NUMBER }}"
+
+      - name: Install Ansible
+        run: |
+          sudo apt update
+          sudo apt install -y ansible
+
+      - name: Install Required Ansible Collections
+        run: |
+          ansible-galaxy collection install ansible.posix
+          ansible-galaxy collection install community.docker
+          ansible-galaxy collection install community.general
+
+      - name: Play Ansible Playbook
+        if: github.ref == 'refs/heads/qua'
+        run: |
+          echo "${{secrets.DEMO_SPLUNK_SSH_KEY}}" > /tmp/private_key.pem; chmod 0600 /tmp/private_key.pem; ansible-playbook -i demo.trackme-solutions.com/hosts.yml demo.trackme-solutions.com/deploy.yml \
+            --private-key=/tmp/private_key.pem \
+            --user=deployer \
+            --extra-vars="appfile=trackme_v${{ env.VERSION_NUMBER }}_${{ env.BUILD_NUMBER }}.tgz splunk_passwd=${{ secrets.DEMO_SPLUNK_PASSWD }}"
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: "false"
+          ANSIBLE_DEPRECATION_WARNINGS: "false"
+
+      #
+      # Upload release to the release site
+      #
+
+      - name: Create target directory for on release site
+        # main branch only
+        if: ${{ !contains(github.event.head_commit.message, '#nopublish') && github.ref == 'refs/heads/main' }}
+        uses: appleboy/ssh-action@v0.1.7
+        env:
+          VERSION_NUMBER: ${{ env.VERSION_NUMBER }}
+          BUILD_NUMBER: ${{ env.BUILD_NUMBER }}
+        with:
+          host: ${{ secrets.RELEASE_SITE_HOST }}
+          username: ${{ secrets.RELEASE_SITE_USER }}
+          key: ${{ secrets.RELEASE_SITE_SSH_KEY }}
+          port: ${{ secrets.RELEASE_SITE_SSH_PORT }}
+          envs: VERSION_NUMBER,BUILD_NUMBER
+          script: |
+            mkdir "/var/www/trackme-solutions.com/downloads/TA-trackme-cribl/TA-trackme-cribl_${VERSION_NUMBER}_${BUILD_NUMBER}"
+
+      - name: Upload to release site
+        # main branch only
+        if: ${{ !contains(github.event.head_commit.message, '#nopublish') && github.ref == 'refs/heads/main' }}
+        uses: appleboy/scp-action@master
+        env:
+          VERSION_NUMBER: ${{ env.VERSION_NUMBER }}
+          BUILD_NUMBER: ${{ env.BUILD_NUMBER }}
+        with:
+          host: ${{ secrets.RELEASE_SITE_HOST }}
+          username: ${{ secrets.RELEASE_SITE_USER }}
+          key: ${{ secrets.RELEASE_SITE_SSH_KEY }}
+          port: ${{ secrets.RELEASE_SITE_SSH_PORT }}
+          source: "output/*.tgz,output/release-sha256.txt,output/report_appinspect*"
+          target: "/var/www/trackme-solutions.com/downloads/TA-trackme-cribl/TA-trackme-cribl_${{ env.VERSION_NUMBER }}_${{ env.BUILD_NUMBER }}"
+          strip_components: 1
+
+      #
+      #
+      #
+
+      - run: echo "End of process, job status ${{ job.status }}."
