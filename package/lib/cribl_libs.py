@@ -199,3 +199,141 @@ def cribl_test_remote_connectivity(connection_info):
                 "exception": str(e),
             }
         )
+
+
+def get_cribl_secret(storage_passwords, account):
+    # realm
+    credential_realm = (
+        "__REST_CREDENTIAL__#TA-trackme-cribl#configs/conf-ta_trackme_cribl_account"
+    )
+    credential_name = f"{credential_realm}:{account}``"
+
+    # extract as raw json
+    bearer_token_rawvalue = ""
+
+    for credential in storage_passwords:
+        if credential.content.get("realm") == str(
+            credential_realm
+        ) and credential.name.startswith(credential_name):
+            bearer_token_rawvalue = bearer_token_rawvalue + str(
+                credential.content.clear_password
+            )
+
+    # extract a clean json object
+    bearer_token_rawvalue_match = re.search(
+        '\{"cribl_client_secret":\s*"(.*)"\}', bearer_token_rawvalue
+    )
+    if bearer_token_rawvalue_match:
+        bearer_token = bearer_token_rawvalue_match.group(1)
+    else:
+        bearer_token = None
+
+    return bearer_token
+
+
+# Get account credentials, designed to be used for a least privileges approach in a programmatic approach
+def cribl_get_account(reqinfo, account):
+    # get service
+    service = client.connect(
+        owner="nobody",
+        app="TA-trackme-cribl",
+        port=reqinfo.server_rest_port,
+        token=reqinfo.system_authtoken,
+    )
+
+    # Splunk credentials store
+    storage_passwords = service.storage_passwords
+
+    # get all acounts
+    accounts = []
+    conf_file = "ta_trackme_cribl_account"
+
+    # if there are no account, raise an exception, otherwise what we would do here?
+    try:
+        confs = service.confs[str(conf_file)]
+    except Exception as e:
+        error_msg = "We have no remote account configured yet"
+        raise Exception(error_msg)
+
+    for stanza in confs:
+        # get all accounts
+        for name in stanza.name:
+            accounts.append(stanza.name)
+            break
+
+    # Initialization
+    isfound = False
+    keys_mapping = {
+        "cribl_deployment_type": None,
+        "cribl_onprem_leader_url": None,
+        "cribl_client_id": None,
+        "rbac_roles": None,
+    }
+
+    # Get account
+    for stanza in confs:
+        if stanza.name == str(account):
+            isfound = True
+            for key, value in stanza.content.items():
+                if key in keys_mapping:
+                    keys_mapping[key] = value
+            break  # Exit loop once the account is found
+
+    # Assign variables
+    cribl_deployment_type = keys_mapping["cribl_deployment_type"]
+    cribl_onprem_leader_url = keys_mapping["cribl_onprem_leader_url"]
+    cribl_client_id = keys_mapping["cribl_client_id"]
+    rbac_roles = keys_mapping["rbac_roles"]
+
+    # end of get configuration
+
+    # Stop here if we cannot find the submitted account
+    if not isfound:
+        error_msg = 'The account="{}" has not been configured on this instance, cannot proceed!'.format(
+            account
+        )
+        raise Exception(
+            {
+                "status": "failure",
+                "message": error_msg,
+                "account": account,
+            }
+        )
+
+    # RBAC
+    rbac_roles = rbac_roles.split(",")
+
+    # get the secret
+    cribl_client_secret = get_cribl_secret(storage_passwords, account)
+
+    # get token from API
+    connection_info = {
+        "cribl_deployment_type": cribl_deployment_type,
+        "cribl_onprem_leader_url": cribl_onprem_leader_url,
+        "cribl_client_id": cribl_client_id,
+        "cribl_client_secret": cribl_client_secret,
+    }
+
+    try:
+        cribl_token = get_cribl_api_token(connection_info)
+        return {
+            "status": "success",
+            "message": "Cribl API connection was successful",
+            "account": account,
+            "cribl_deployment_type": cribl_deployment_type,
+            "cribl_onprem_leader_url": cribl_onprem_leader_url,
+            "cribl_client_id": cribl_client_id,
+            "cribl_client_secret": cribl_client_secret,
+            "cribl_token": cribl_token,
+            "rbac_roles": rbac_roles,
+        }
+
+    except Exception as e:
+        error_msg = f'The Cribl token for the account="{account}" could not be retrieved, exception={str(e)}'
+        raise Exception(
+            {
+                "status": "failure",
+                "message": error_msg,
+                "account": account,
+            }
+        )

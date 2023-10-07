@@ -54,7 +54,11 @@ import splunklib.client as client
 import splunklib.results as results
 
 # import Cribl libs
-from cribl_libs import cribl_getloglevel, cribl_test_remote_connectivity
+from cribl_libs import (
+    cribl_getloglevel,
+    cribl_test_remote_connectivity,
+    cribl_get_account,
+)
 
 
 class CriblApi_v1(rest_handler.RESTHandler):
@@ -146,7 +150,7 @@ class CriblApi_v1(rest_handler.RESTHandler):
 
         return {"payload": record, "status": 200}
 
-    # Test remote connectivity prior to the creation of a Cribl account
+    # Test Cribl connectivity prior to the creation of a Cribl account
     def post_test_cribl_connectivity(self, request_info, **kwargs):
         describe = False
 
@@ -207,3 +211,87 @@ class CriblApi_v1(rest_handler.RESTHandler):
         # note: the exception is returned as a JSON object
         except Exception as e:
             return {"payload": str(e), "status": 500}
+
+    # Get account credentials with a least privileges approach
+    def post_get_account(self, request_info, **kwargs):
+        describe = False
+
+        # Retrieve from data
+        try:
+            resp_dict = json.loads(str(request_info.raw_args["payload"]))
+        except Exception as e:
+            resp_dict = None
+
+        if resp_dict is not None:
+            try:
+                describe = resp_dict["describe"]
+                if describe in ("true", "True"):
+                    describe = True
+            except Exception as e:
+                describe = False
+                account = resp_dict["account"]
+        else:
+            # body is not required in this endpoint, if not submitted do not describe the usage
+            describe = False
+
+        # if describe is requested, show the usage
+        if describe:
+            response = {
+                "describe": "This endpoint provides connection details for a Splunk remote account to be used in a programmatic manner with a least privileges approach, it requires a POST call with the following options:",
+                "resource_desc": "Return a remote account credential details for programmatic access with a least privileges approach",
+                "resource_spl_example": "| cribl mode=post url=\"/services/cribl/v1/get_account\" body=\"{'account': 'cribl'}\"",
+                "options": [
+                    {
+                        "account": "The account configuration identifier",
+                    }
+                ],
+            }
+            return {"payload": response, "status": 200}
+
+        # Get splunkd port
+        splunkd_port = request_info.server_rest_port
+
+        # Get service
+        service = client.connect(
+            owner="nobody",
+            app="TA-trackme-cribl",
+            port=splunkd_port,
+            token=request_info.system_authtoken,
+        )
+
+        # set loglevel
+        loglevel = cribl_getloglevel(
+            request_info.system_authtoken, request_info.server_rest_port
+        )
+        log.setLevel(logging.getLevelName(loglevel))
+
+        # get all acounts
+        try:
+            accounts = []
+            conf_file = "ta_trackme_cribl_settings"
+            confs = service.confs[str(conf_file)]
+            for stanza in confs:
+                # get all accounts
+                for name in stanza.name:
+                    accounts.append(stanza.name)
+                    break
+
+        except Exception as e:
+            error_msg = "There are no remote Splunk account configured yet"
+            return {
+                "payload": {
+                    "status": "failure",
+                    "message": error_msg,
+                    "account": account,
+                },
+                "status": 500,
+            }
+
+        else:
+            try:
+                response = cribl_get_account(request_info, account)
+                return {"payload": response, "status": 200}
+
+            # note: the exception is returned as a JSON object
+            except Exception as e:
+                return {"payload": str(e), "status": 500}
