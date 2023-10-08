@@ -109,6 +109,46 @@ def cribl_getloglevel(system_authtoken, splunkd_port):
     return loglevel
 
 
+def cribl_api_token_for_account(session_key, splunkd_uri, account):
+    """
+    Get the account details, login to Cribl API and return.
+    """
+
+    logging.info(f"starting cribl_api_token_for_account for account={account}")
+
+    # Ensure splunkd_uri starts with "https://"
+    if not splunkd_uri.startswith("https://"):
+        splunkd_uri = f"https://{splunkd_uri}"
+
+    # Build header and target URL
+    headers = CaseInsensitiveDict()
+    headers["Authorization"] = f"Splunk {session_key}"
+    target_url = f"{splunkd_uri}/services/cribl/v1/get_account"
+
+    # Create a requests session for better performance
+    session = requests.Session()
+    session.headers.update(headers)
+
+    try:
+        # Use a context manager to handle the request
+        with session.post(
+            target_url, verify=False, data=json.dumps({"account": account})
+        ) as response:
+            if response.ok:
+                logging.debug(f'Success cribl account, data="{response}"')
+                response_json = response.json()
+                return response_json
+            else:
+                error_message = f'Failed cribl account , status_code={response.status_code}, response_text="{response.text}"'
+                logging.error(error_message)
+                raise Exception(error_message)
+
+    except Exception as e:
+        error_message = f'Failed to retrieve account, exception="{str(e)}"'
+        logging.error(error_message)
+        raise Exception(error_message)
+
+
 def get_cribl_api_token(connection_info):
     headers = {"accept": "application/json", "Content-Type": "application/json"}
     session = requests.session()
@@ -265,6 +305,7 @@ def cribl_get_account(reqinfo, account):
     isfound = False
     keys_mapping = {
         "cribl_deployment_type": None,
+        "cribl_cloud_organization_id": None,
         "cribl_onprem_leader_url": None,
         "cribl_client_id": None,
         "rbac_roles": None,
@@ -281,6 +322,7 @@ def cribl_get_account(reqinfo, account):
 
     # Assign variables
     cribl_deployment_type = keys_mapping["cribl_deployment_type"]
+    cribl_cloud_organization_id = keys_mapping["cribl_cloud_organization_id"]
     cribl_onprem_leader_url = keys_mapping["cribl_onprem_leader_url"]
     cribl_client_id = keys_mapping["cribl_client_id"]
     rbac_roles = keys_mapping["rbac_roles"]
@@ -309,6 +351,7 @@ def cribl_get_account(reqinfo, account):
     # get token from API
     connection_info = {
         "cribl_deployment_type": cribl_deployment_type,
+        "cribl_cloud_organization_id": cribl_cloud_organization_id,
         "cribl_onprem_leader_url": cribl_onprem_leader_url,
         "cribl_client_id": cribl_client_id,
         "cribl_client_secret": cribl_client_secret,
@@ -321,6 +364,7 @@ def cribl_get_account(reqinfo, account):
             "message": "Cribl API connection was successful",
             "account": account,
             "cribl_deployment_type": cribl_deployment_type,
+            "cribl_cloud_organization_id": cribl_cloud_organization_id,
             "cribl_onprem_leader_url": cribl_onprem_leader_url,
             "cribl_client_id": cribl_client_id,
             "cribl_client_secret": cribl_client_secret,

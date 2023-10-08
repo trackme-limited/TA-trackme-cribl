@@ -22,6 +22,13 @@ fields = [
         validator=None,
     ),
     field.RestField(
+        "cribl_cloud_organization_id",
+        required=False,
+        encrypted=False,
+        default=None,
+        validator=None,
+    ),
+    field.RestField(
         "cribl_url", required=False, encrypted=False, default=None, validator=None
     ),
     field.RestField(
@@ -29,7 +36,7 @@ fields = [
     ),
     field.RestField(
         "cribl_client_secret",
-        required=False,
+        required=True,
         encrypted=True,
         default=None,
         validator=None,

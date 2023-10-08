@@ -168,6 +168,9 @@ class CriblApi_v1(rest_handler.RESTHandler):
             except Exception as e:
                 describe = False
                 cribl_deployment_type = resp_dict.get("cribl_deployment_type", "cloud")
+                cribl_cloud_organization_id = resp_dict.get(
+                    "cribl_cloud_organization_id", None
+                )
                 cribl_onprem_leader_url = resp_dict.get("cribl_onprem_leader_url", None)
                 cribl_client_id = resp_dict.get("cribl_client_id", None)
                 cribl_client_secret = resp_dict.get("cribl_client_secret", None)
@@ -201,6 +204,7 @@ class CriblApi_v1(rest_handler.RESTHandler):
         try:
             connection_info = {
                 "cribl_deployment_type": cribl_deployment_type,
+                "cribl_cloud_organization_id": cribl_cloud_organization_id,
                 "cribl_onprem_leader_url": cribl_onprem_leader_url,
                 "cribl_client_id": cribl_client_id,
                 "cribl_client_secret": cribl_client_secret,
@@ -215,12 +219,15 @@ class CriblApi_v1(rest_handler.RESTHandler):
     # Get account credentials with a least privileges approach
     def post_get_account(self, request_info, **kwargs):
         describe = False
+        logging.info(f"Starting post_get_account, request_info={request_info}")
 
         # Retrieve from data
         try:
             resp_dict = json.loads(str(request_info.raw_args["payload"]))
         except Exception as e:
             resp_dict = None
+
+        logging.info(f"resp_dict is {resp_dict}")
 
         if resp_dict is not None:
             try:

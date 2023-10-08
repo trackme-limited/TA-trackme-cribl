@@ -68,6 +68,16 @@
                         },
                         {
                             "type": "text",
+                            "label": "cribl_cloud_organization_id",
+                            "help": "If Cloud, specify the organization ID",
+                            "field": "cribl_cloud_organization_id",
+                            "required": false,
+                            "options": {
+                                "display": true
+                            }
+                        },
+                        {
+                            "type": "text",
                             "label": "cribl_onprem_leader_url",
                             "help": "If on-premise, specify the leader URL in the format https://<hostname>:<port>",
                             "field": "cribl_url",
