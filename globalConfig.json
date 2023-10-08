@@ -251,7 +251,7 @@
                 }
             ],
             "title": "Configuration",
-            "description": "Configure the Add-on for Cribl replay"
+            "description": "Configure the TrackMe Addon for Cribl API"
         }
     },
     "meta": {
