@@ -200,6 +200,10 @@ The Application provides a builtin custom command ``cribl`` allowing to interact
 
 **The following sections shows internal API calls:**
 
+#### Get request_info
+
+    | cribl mode=get url="/services/cribl/v1/request_info"
+
 #### Test connectivity to Cribl before creating an account
 
     | cribl mode=post url="/services/cribl/v1/test_cribl_connectivity" body="{'cribl_deployment_type': 'cloud', 'cribl_client_id': '<redacted_client_id>', 'cribl_client_secret': '<redacted_client_secret>'}"

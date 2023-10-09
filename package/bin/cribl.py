@@ -198,6 +198,10 @@ class CriblRestHandler(GeneratingCommand):
             self._metadata.searchinfo.session_key, self._metadata.searchinfo.splunkd_uri
         )
 
+        # set logging_level
+        logginglevel = logging.getLevelName(reqinfo["logging_level"])
+        log.setLevel(logginglevel)
+
         # init headers
         headers = {}
 
@@ -328,12 +332,29 @@ class CriblRestHandler(GeneratingCommand):
                     for item in response_data["items"]:
                         # Check if the item is a dictionary (or dict-like) before accessing its keys
                         if isinstance(item, dict):
+                            if "id" in item:
+                                item_id = item["id"]
+                            else:
+                                item_id = None
+
                             if "conf" in item:
                                 # If 'conf' exists in the item, yield that specifically
-                                result = {
-                                    "_time": time.time(),
-                                    "_raw": json.dumps(item["conf"]),
-                                }
+                                item_result = item["conf"]
+
+                                # add id
+                                if item_id:
+                                    item_result["id"] = item_id
+
+                                yield_result = {}
+                                yield_result["_time"] = time.time()
+                                yield_result["_raw"] = item_result
+
+                                if item_id:
+                                    yield_result["id"] = item_id
+
+                                # result
+                                result = yield_result
+
                             else:
                                 # If 'conf' doesn't exist in the item, yield the entire item
                                 result = {
@@ -496,7 +517,7 @@ class CriblRestHandler(GeneratingCommand):
                         routes_url, headers=headers, verify=verify_ssl
                     )
                     routes_items = response_routes.json().get("items")
-                    logging.info(f"MARKER routes_item={routes_items}")
+                    logging.debug(f"routes_item={routes_items}")
 
                     # Loop through the route items
                     for route_item in routes_items:
