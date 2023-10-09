@@ -126,6 +126,10 @@ jobs:
         run: |
           pandoc README.md -s --from=markdown -V geometry:margin=.4in -o README.pdf; ls -ltr README.pdf
 
+      - name: List directory contents
+        run: |
+          ls -al
+
       #
       # Upload release to the release site
       #
