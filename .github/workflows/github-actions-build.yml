@@ -128,6 +128,10 @@ jobs:
           ANSIBLE_HOST_KEY_CHECKING: "false"
           ANSIBLE_DEPRECATION_WARNINGS: "false"
 
+      - name: Generate README.pdf using pandoc
+        run: |
+          pandoc README.md -s --from=markdown -V geometry:margin=.4in -o README.pdf
+
       #
       # Upload release to the release site
       #
@@ -160,7 +164,7 @@ jobs:
           username: ${{ secrets.RELEASE_SITE_USER }}
           key: ${{ secrets.RELEASE_SITE_SSH_KEY }}
           port: ${{ secrets.RELEASE_SITE_SSH_PORT }}
-          source: "output/*.tgz,output/release-sha256.txt,output/report_appinspect*"
+          source: "output/*.tgz,output/release-sha256.txt,output/report_appinspect*,README.pdf"
           target: "/var/www/trackme-solutions.com/downloads/TA-trackme-cribl/TA-trackme-cribl_${{ env.VERSION_NUMBER }}_${{ env.BUILD_NUMBER }}"
           strip_components: 1
 
