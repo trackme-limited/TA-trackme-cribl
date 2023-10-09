@@ -117,17 +117,6 @@ jobs:
           ansible-galaxy collection install community.docker
           ansible-galaxy collection install community.general
 
-      - name: Play Ansible Playbook
-        if: github.ref == 'refs/heads/qua'
-        run: |
-          echo "${{secrets.DEMO_SPLUNK_SSH_KEY}}" > /tmp/private_key.pem; chmod 0600 /tmp/private_key.pem; ansible-playbook -i demo.trackme-solutions.com/hosts.yml demo.trackme-solutions.com/deploy.yml \
-            --private-key=/tmp/private_key.pem \
-            --user=deployer \
-            --extra-vars="appfile=trackme_v${{ env.VERSION_NUMBER }}_${{ env.BUILD_NUMBER }}.tgz splunk_passwd=${{ secrets.DEMO_SPLUNK_PASSWD }}"
-        env:
-          ANSIBLE_HOST_KEY_CHECKING: "false"
-          ANSIBLE_DEPRECATION_WARNINGS: "false"
-
       - name: Install pandoc & texlive-latex-recommended
         run: |
           sudo apt-get update
@@ -135,7 +124,7 @@ jobs:
 
       - name: Generate README.pdf using pandoc
         run: |
-          pandoc README.md -s --from=markdown -V geometry:margin=.4in -o README.pdf
+          pandoc README.md -s --from=markdown -V geometry:margin=.4in -o README.pdf; ls -ltr README.pdf
 
       #
       # Upload release to the release site
