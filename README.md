@@ -10,6 +10,14 @@
 - Run pre-defined builtin functions to retrieve metrics for complex actions (example: get pipelines metrics), this allows charting realtime metrics in Splunk from the Cribl API
 - Roles Based Access Control and least privilege approach
 
+*Get pipelines example:*
+
+![img](docs/img/get_pipelines.png)
+
+*Realtime metrics charting:*
+
+![img](docs/img/pipelines_metrics.png)
+
 ## License
 
 **This application is licensed upon the TrackMe EULA:**
@@ -57,6 +65,12 @@ The Splunk Search Head where this application is deployed needs to able to reach
 | cribl_client_id                 | If on-premise, the username for the API connection, if using Cloud, the client_id.                            |
 | cribl_client_secret             | If on-premise, the password for the API connection, if using Cloud, the client_secret.                        |
 | rbac_roles                      | A comma separated list of Splunk roles a user must be a member of to be allowed to used this account, the role must be a true membership  |
+| cribl_ssl_verify                | Enable or disable SSL verification for Cribl on-prem only, for testing and development purposes. (mandatory for Cloud) |
+| cribl_ssl_certificate_path      | To verify a self-signed or internal PKI certificate, you can specifify the local path to the PEM file |
+
+*Account example:*
+
+![img](docs/img/account.png)
 
 **When creating the Account, the application will automatically attempt to access and authenticate against the Cribl API, if there are any failures, the UI show refuse the account creation and will return the exception.**
 
@@ -103,6 +117,13 @@ The Application provides a builtin custom command ``cribl`` allowing to interact
 
 **The following command sheet shows various useful usage to interact with the Cribl API:**
 
+- When working with metrics, you can use the Splunk timerange filter which will automatically be taken into account, the period will be reflected when calling the API
+- The Cribl API allows up to the last 3 hours of metric with a granular 10 seconds time window
+- Beyond 3 hours, Cribl API rolls metrics with a 10 minutes span
+- The ``cribl`` custom command automatically takes this into account
+- When working with configuration, use ``spath`` to automatically extracted the fields from the JSON API response
+- You can also perform ``POST`` calls using ``mode=post`` and the ``body`` option
+
 #### Get workers count & information
 
     | cribl account=cribl mode=get url="/api/v1/master/groups?fields=workerCount&product=stream" | spath
@@ -138,6 +159,10 @@ The Application provides a builtin custom command ``cribl`` allowing to interact
 #### Get routes
 
     | cribl account=cribl mode=get url="/api/v1/m/default/routes" | spath
+
+#### Get pipelines
+
+    | cribl account=cribl mode=get url="/api/v1/m/default/pipelines" | spath
 
 #### Get packs
 
