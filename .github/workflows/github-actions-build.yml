@@ -128,10 +128,10 @@ jobs:
           ANSIBLE_HOST_KEY_CHECKING: "false"
           ANSIBLE_DEPRECATION_WARNINGS: "false"
 
-      - name: Install pandoc
+      - name: Install pandoc & texlive-latex-recommended
         run: |
           sudo apt-get update
-          sudo apt-get install -y pandoc
+          sudo apt-get install -y pandoc texlive-latex-recommended
 
       - name: Generate README.pdf using pandoc
         run: |
