@@ -1,2 +1,1 @@
 splunk-add-on-ucc-framework>=5.27.2
-pandoc>=2.3
