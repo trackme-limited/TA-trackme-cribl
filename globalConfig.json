@@ -16,8 +16,8 @@
                                 "field": "name"
                             },
                             {
-                                "label": "Cribl url",
-                                "field": "cribl_url"
+                                "label": "Cribl deployment type",
+                                "field": "cribl_deployment_type"
                             }
                         ]
                     },
@@ -80,7 +80,7 @@
                             "type": "text",
                             "label": "cribl_onprem_leader_url",
                             "help": "If on-premise, specify the leader URL in the format https://<hostname>:<port>",
-                            "field": "cribl_url",
+                            "field": "cribl_onprem_leader_url",
                             "required": false,
                             "options": {
                                 "display": true
@@ -101,6 +101,33 @@
                             "help": "If on-premise, the password for the API connection, if using Cloud, the client_secret.",
                             "field": "cribl_client_secret",
                             "required": true
+                        },
+                        {
+                            "type": "radio",
+                            "label": "on-prem SSL certificate verify",
+                            "field": "cribl_ssl_verify",
+                            "defaultValue": "1",
+                            "help": "Enable or disable SSL verification for Cribl on-prem only, for testing and development purposes. (mandatory for Cloud)",
+                            "required": true,
+                            "options": {
+                                "items": [
+                                    {
+                                        "value": "1",
+                                        "label": "Yes"
+                                    },
+                                    {
+                                        "value": "0",
+                                        "label": "No"
+                                    }
+                                ],
+                                "display": true
+                            }
+                        },
+                        {
+                            "type": "text",
+                            "label": "on-prem SSL certificate path",
+                            "help": "To verify a self-signed or internal PKI certificate, you can specifify the local path to the PEM file",
+                            "field": "cribl_ssl_certificate_path"
                         },
                         {
                             "type": "text",

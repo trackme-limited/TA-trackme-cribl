@@ -17,16 +17,12 @@ import os
 import sys
 import re
 import json
-import random
-import time
 import logging
-from logging.handlers import RotatingFileHandler
 
 # Networking and URL handling imports
 import requests
 from requests.structures import CaseInsensitiveDict
 from urllib.parse import urlencode
-import urllib.parse
 import urllib3
 
 # Disable insecure request warnings for urllib3
@@ -153,12 +149,12 @@ def get_cribl_api_token(connection_info):
     headers = {"accept": "application/json", "Content-Type": "application/json"}
     session = requests.session()
 
-    logging.info(f"get_cribl_api_token connection_info={connection_info}")
-
     cribl_deployment_type = connection_info.get("cribl_deployment_type")
     cribl_onprem_leader_url = connection_info.get("cribl_onprem_leader_url")
     cribl_client_id = connection_info.get("cribl_client_id")
     cribl_client_secret = connection_info.get("cribl_client_secret")
+    cribl_ssl_verify = int(connection_info.get("cribl_ssl_verify", 1))
+    cribl_ssl_certificate_path = connection_info.get("cribl_ssl_certificate_path", None)
 
     if cribl_deployment_type == "onprem":
         # Enforce https scheme and remove trailing slash in the URL, if any
@@ -166,17 +162,36 @@ def get_cribl_api_token(connection_info):
             f"https://{cribl_onprem_leader_url.replace('https://', '').rstrip('/')}"
         )
 
-        response = session.post(
-            f"{cribl_onprem_leader_url}/api/v1/auth/login",
-            json={"username": cribl_client_id, "password": cribl_client_secret},
-            verify=True,
-            headers=headers,
-        )
+        # if ssl cert was provided
+        if cribl_ssl_verify == 0:
+            response = session.post(
+                f"{cribl_onprem_leader_url}/api/v1/auth/login",
+                json={"username": cribl_client_id, "password": cribl_client_secret},
+                verify=False,
+                headers=headers,
+            )
+
+        elif cribl_ssl_certificate_path and os.path.isfile(cribl_ssl_certificate_path):
+            response = session.post(
+                f"{cribl_onprem_leader_url}/api/v1/auth/login",
+                json={"username": cribl_client_id, "password": cribl_client_secret},
+                verify=cribl_ssl_certificate_path,
+                headers=headers,
+            )
+
+        else:
+            response = session.post(
+                f"{cribl_onprem_leader_url}/api/v1/auth/login",
+                json={"username": cribl_client_id, "password": cribl_client_secret},
+                verify=True,
+                headers=headers,
+            )
 
         if response.status_code == 200:
             res = response.json()
             token = f'Bearer {res["token"]}'
             return token
+
         else:
             error_msg = f"Failed to authenticate against Cribl on-premise API with response.code: {response.status_code}, response.text: {response.text}."
             logging.error(error_msg)
@@ -309,6 +324,8 @@ def cribl_get_account(reqinfo, account):
         "cribl_onprem_leader_url": None,
         "cribl_client_id": None,
         "rbac_roles": None,
+        "cribl_ssl_verify": None,
+        "cribl_ssl_certificate_path": None,
     }
 
     # Get account
@@ -326,6 +343,8 @@ def cribl_get_account(reqinfo, account):
     cribl_onprem_leader_url = keys_mapping["cribl_onprem_leader_url"]
     cribl_client_id = keys_mapping["cribl_client_id"]
     rbac_roles = keys_mapping["rbac_roles"]
+    cribl_ssl_verify = keys_mapping["cribl_ssl_verify"]
+    cribl_ssl_certificate_path = keys_mapping["cribl_ssl_certificate_path"]
 
     # end of get configuration
 
@@ -355,6 +374,8 @@ def cribl_get_account(reqinfo, account):
         "cribl_onprem_leader_url": cribl_onprem_leader_url,
         "cribl_client_id": cribl_client_id,
         "cribl_client_secret": cribl_client_secret,
+        "cribl_ssl_verify": cribl_ssl_verify,
+        "cribl_ssl_certificate_path": cribl_ssl_certificate_path,
     }
 
     try:
@@ -370,6 +391,8 @@ def cribl_get_account(reqinfo, account):
             "cribl_client_secret": cribl_client_secret,
             "cribl_token": cribl_token,
             "rbac_roles": rbac_roles,
+            "cribl_ssl_verify": cribl_ssl_verify,
+            "cribl_ssl_certificate_path": cribl_ssl_certificate_path,
         }
 
     except Exception as e:

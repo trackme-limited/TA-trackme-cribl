@@ -7,12 +7,9 @@ __author__ = "TrackMe Limited U.K"
 import json
 import logging
 import os
-import re
 import sys
 import time
-import requests
 from urllib.parse import urlencode
-import urllib.parse
 import urllib3
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -174,6 +171,10 @@ class CriblApi_v1(rest_handler.RESTHandler):
                 cribl_onprem_leader_url = resp_dict.get("cribl_onprem_leader_url", None)
                 cribl_client_id = resp_dict.get("cribl_client_id", None)
                 cribl_client_secret = resp_dict.get("cribl_client_secret", None)
+                cribl_ssl_verify = resp_dict.get("cribl_ssl_verify", 1)
+                cribl_ssl_certificate_path = resp_dict.get(
+                    "cribl_ssl_certificate_path", None
+                )
         else:
             # body is not required in this endpoint, if not submitted do not describe the usage
             describe = False
@@ -190,6 +191,8 @@ class CriblApi_v1(rest_handler.RESTHandler):
                         "cribl_onprem_leader_url": "For on-premise, The Cribl leader url in the form: https://<url>:<port>",
                         "cribl_client_id": "The usernane if using on-premise, client_id if using Cloud",
                         "cribl_client_secret": "The password if using on-premise, client_secret if using Cloud",
+                        "cribl_ssl_verify": "For on-prem only, enable or disable the SSL certificate validation",
+                        "cribl_ssl_certificate_path": "For on-prem only, specify the path on the file-system to the certificate file for SSL validation",
                     }
                 ],
             }
@@ -208,6 +211,8 @@ class CriblApi_v1(rest_handler.RESTHandler):
                 "cribl_onprem_leader_url": cribl_onprem_leader_url,
                 "cribl_client_id": cribl_client_id,
                 "cribl_client_secret": cribl_client_secret,
+                "cribl_ssl_verify": cribl_ssl_verify,
+                "cribl_ssl_certificate_path": cribl_ssl_certificate_path,
             }
             response = cribl_test_remote_connectivity(connection_info)
             return {"payload": response, "status": 200}

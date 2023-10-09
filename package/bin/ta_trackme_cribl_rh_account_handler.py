@@ -21,6 +21,10 @@ class CustomRestHandlerCreateRemoteAccount(AdminExternalHandler):
             "cribl_onprem_leader_url": self.payload.get("cribl_onprem_leader_url"),
             "cribl_client_id": self.payload.get("cribl_client_id"),
             "cribl_client_secret": self.payload.get("cribl_client_secret"),
+            "cribl_ssl_verify": self.payload.get("cribl_ssl_verify"),
+            "cribl_ssl_certificate_path": self.payload.get(
+                "cribl_ssl_certificate_path"
+            ),
         }
 
         # check connectivity, raise an exception if the connectivity check fails

@@ -29,7 +29,11 @@ fields = [
         validator=None,
     ),
     field.RestField(
-        "cribl_url", required=False, encrypted=False, default=None, validator=None
+        "cribl_onprem_leader_url",
+        required=False,
+        encrypted=False,
+        default=None,
+        validator=None,
     ),
     field.RestField(
         "cribl_client_id", required=True, encrypted=False, default=None, validator=None
@@ -38,6 +42,20 @@ fields = [
         "cribl_client_secret",
         required=True,
         encrypted=True,
+        default=None,
+        validator=None,
+    ),
+    field.RestField(
+        "cribl_ssl_verify",
+        required=False,
+        encrypted=False,
+        default=1,
+        validator=None,
+    ),
+    field.RestField(
+        "cribl_ssl_certificate_path",
+        required=False,
+        encrypted=False,
         default=None,
         validator=None,
     ),

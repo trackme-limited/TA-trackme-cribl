@@ -227,7 +227,22 @@ class CriblRestHandler(GeneratingCommand):
 
             headers["Authorization"] = account_info.get("cribl_token")
             target_url = prepare_target_url_for_cribl(account_info, self.url)
-            verify_ssl = True
+
+            # ssl verification
+            cribl_ssl_verify = int(account_info.get("cribl_ssl_verify", 1))
+            cribl_ssl_certificate_path = account_info.get(
+                "cribl_ssl_certificate_path", None
+            )
+
+            if cribl_ssl_verify == 0:
+                verify_ssl = False
+            elif cribl_ssl_certificate_path and os.path.isfile(
+                cribl_ssl_certificate_path
+            ):
+                verify_ssl = cribl_ssl_certificate_path
+            else:
+                verify_ssl = True
+
         else:
             headers["Authorization"] = f"Splunk {session_key}"
             target_url = f"{reqinfo['server_rest_uri']}/{self.url}"
@@ -271,7 +286,9 @@ class CriblRestHandler(GeneratingCommand):
 
             try:
                 response_data = response.json()
-                logging.info(f"response.text={response.text}")
+                logging.debug(
+                    f"response.status_code={response.status_code}, response.text={response.text}"
+                )
 
                 if "items" in response_data and isinstance(
                     response_data["items"], list
