@@ -126,7 +126,7 @@
                         {
                             "type": "text",
                             "label": "on-prem SSL certificate path",
-                            "help": "To verify a self-signed or internal PKI certificate, you can specifify the local path to the PEM file",
+                            "help": "To verify a self-signed or internal PKI certificate, you can specify the local path to the PEM file",
                             "field": "cribl_ssl_certificate_path"
                         },
                         {

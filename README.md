@@ -7,14 +7,14 @@
 - Configure one or more Cribl API targets (account)
 - The Cribl target can be an on-premise Cribl deployment, or Cribl Cloud
 - Access and perform API calls to Cribl in pure Splunk SPL via the cribl builtin command
-- Run pre-defined builtin functions to retrieve metrics for complex actions (example: get pipelines metrics), this allows charting realtime metrics in Splunk from the Cribl API
+- Run predefined built in functions to retrieve metrics for complex actions (example: get pipelines metrics), this allows charting real time metrics in Splunk from the Cribl API
 - Roles Based Access Control and least privilege approach
 
 *Get pipelines example:*
 
 ![img](docs/img/get_pipelines.png)
 
-*Realtime metrics charting:*
+*Real Time metrics charting:*
 
 ![img](docs/img/pipelines_metrics.png)
 
@@ -44,7 +44,7 @@ This application has no dependencies regarding other Splunk applications.
 
 ### Network requirements
 
-The Splunk Search Head where this application is deployed needs to able to reach the Cribl URL target on the associated port. (typically HTTPs over 443)
+The Splunk Search Head where this application is deployed needs to be able to reach the Cribl URL target on the associated port. (typically HTTPs over 443)
 
 ## Installation & deployment matrix
 
@@ -66,13 +66,13 @@ The Splunk Search Head where this application is deployed needs to able to reach
 | cribl_client_secret             | If on-premise, the password for the API connection, if using Cloud, the client_secret.                        |
 | rbac_roles                      | A comma separated list of Splunk roles a user must be a member of to be allowed to used this account, the role must be a true membership  |
 | cribl_ssl_verify                | Enable or disable SSL verification for Cribl on-prem only, for testing and development purposes. (mandatory for Cloud) |
-| cribl_ssl_certificate_path      | To verify a self-signed or internal PKI certificate, you can specifify the local path to the PEM file |
+| cribl_ssl_certificate_path      | To verify a self-signed or internal PKI certificate, you can specify the local path to the PEM file |
 
 *Account example:*
 
 ![img](docs/img/account.png)
 
-**When creating the Account, the application will automatically attempt to access and authenticate against the Cribl API, if there are any failures, the UI show refuse the account creation and will return the exception.**
+**When creating the Account, the application will automatically attempt to access and authenticate against the Cribl API, if there are any failures, the UI will refuse the account creation and will return the exception.**
 
 *You can also test the connectivity prior to the configuration of the account, in fact the UI calls this same endpoint to verify the connectivity for the account configuration:*
 
@@ -117,7 +117,7 @@ The Application provides a builtin custom command ``cribl`` allowing to interact
 
 **The following command sheet shows various useful usage to interact with the Cribl API:**
 
-- When working with metrics, you can use the Splunk timerange filter which will automatically be taken into account, the period will be reflected when calling the API
+- When working with metrics, you can use the Splunk time range filter which will automatically be taken into account, the period will be reflected when calling the API
 - The Cribl API allows up to the last 3 hours of metric with a granular 10 seconds time window
 - Beyond 3 hours, Cribl API rolls metrics with a 10 minutes span
 - The ``cribl`` custom command automatically takes this into account
