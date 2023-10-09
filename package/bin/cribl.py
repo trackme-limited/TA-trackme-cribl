@@ -16,7 +16,6 @@ __status__ = "PRODUCTION"
 import json
 import logging
 import os
-import re
 import sys
 import time
 from ast import literal_eval
@@ -119,6 +118,30 @@ def prepare_target_url_for_cribl(account_info, url):
         if not cribl_onprem_leader_url.startswith("https://"):
             cribl_onprem_leader_url = "https://" + cribl_onprem_leader_url
         return f"{cribl_onprem_leader_url.rstrip('/')}{url}"
+
+
+def prepare_target_url_groups_for_cribl(account_info):
+    cribl_deployment_type = account_info.get("cribl_deployment_type")
+    groups_url = f"/api/v1/master/groups?product=stream"
+    if cribl_deployment_type == "cloud":
+        return f"https://main-{account_info.get('cribl_cloud_organization_id')}.cribl.cloud{groups_url}"
+    if cribl_deployment_type == "onprem":
+        cribl_onprem_leader_url = account_info.get("cribl_onprem_leader_url")
+        if not cribl_onprem_leader_url.startswith("https://"):
+            cribl_onprem_leader_url = "https://" + cribl_onprem_leader_url
+        return f"{cribl_onprem_leader_url.rstrip('/')}{groups_url}"
+
+
+def prepare_target_url_routes_for_cribl(account_info, group):
+    cribl_deployment_type = account_info.get("cribl_deployment_type")
+    routes_url = f"/api/v1/m/{group}/routes"
+    if cribl_deployment_type == "cloud":
+        return f"https://main-{account_info.get('cribl_cloud_organization_id')}.cribl.cloud{routes_url}"
+    if cribl_deployment_type == "onprem":
+        cribl_onprem_leader_url = account_info.get("cribl_onprem_leader_url")
+        if not cribl_onprem_leader_url.startswith("https://"):
+            cribl_onprem_leader_url = "https://" + cribl_onprem_leader_url
+        return f"{cribl_onprem_leader_url.rstrip('/')}{routes_url}"
 
 
 def prepare_request_body(body):
@@ -448,9 +471,55 @@ class CriblRestHandler(GeneratingCommand):
                     "latest": time.time(),
                 }
 
-            response = requests.post(
-                target_url, headers=headers, json=data, verify=verify_ssl
-            )
+            # for routes, we need to retrieve the routes definition first
+            if self.cribl_function == "get_routes_metrics":
+                # get groups
+                groups_url = prepare_target_url_groups_for_cribl(account_info)
+                response_groups = requests.get(
+                    groups_url, headers=headers, verify=verify_ssl
+                )
+                response_groups_items = response_groups.json().get("items")
+                # form a list of groups
+                groups_list = []
+                for item in response_groups_items:
+                    groups_list.append(item.get("id"))
+
+                # init a dict
+                routes_dict = {}
+
+                # loop through the groups, and get the routes
+                for group in groups_list:
+                    routes_url = prepare_target_url_routes_for_cribl(
+                        account_info, group
+                    )
+                    response_routes = requests.get(
+                        routes_url, headers=headers, verify=verify_ssl
+                    )
+                    routes_items = response_routes.json().get("items")
+                    logging.info(f"MARKER routes_item={routes_items}")
+
+                    # Loop through the route items
+                    for route_item in routes_items:
+                        routes = route_item.get("routes")
+
+                        # finally loop through the routes and populates our dict
+                        for route in routes:
+                            route_id = route.get("id")
+                            route_name = route.get("name")
+                            routes_dict[route_id] = route_name
+
+                # debug only
+                logging.debug(f"routes_dict={routes_dict}")
+
+                # get response
+                response = requests.post(
+                    target_url, headers=headers, json=data, verify=verify_ssl
+                )
+
+            else:
+                response = requests.post(
+                    target_url, headers=headers, json=data, verify=verify_ssl
+                )
 
             if response.status_code not in [200, 201, 202]:
                 logging.error(
@@ -470,58 +539,67 @@ class CriblRestHandler(GeneratingCommand):
                     yield {
                         "_time": result["endtime"],
                         "_raw": result,
-                        "bytesIn": result.get("bytesIn"),
-                        "bytesOut": result.get("bytesOut"),
-                        "eventsIn": result.get("eventsIn"),
-                        "eventsOut": result.get("eventsOut"),
+                        "bytesIn": result.get("bytesIn", 0),
+                        "bytesOut": result.get("bytesOut", 0),
+                        "eventsIn": result.get("eventsIn", 0),
+                        "eventsOut": result.get("eventsOut", 0),
                     }
 
                 elif self.cribl_function == "get_destinations_metrics":
                     yield {
                         "_time": result["endtime"],
                         "_raw": result,
-                        "worker_group": result.get("__worker_group"),
-                        "destination": result.get("output"),
-                        "bytesOut": result.get("bytesOut"),
-                        "eventsOut": result.get("eventsOut"),
-                        "eventsDropped": result.get("eventsDropped"),
-                        "health": result.get("health"),
-                        "backpressure": result.get("backpressure"),
+                        "worker_group": result.get("__worker_group", "unknown"),
+                        "destination": result.get("output", "unknown"),
+                        "bytesOut": result.get("bytesOut", 0),
+                        "eventsOut": result.get("eventsOut", 0),
+                        "eventsDropped": result.get("eventsDropped", 0),
+                        "health": result.get("health", 0),
+                        "backpressure": result.get("backpressure", 0),
                     }
 
                 elif self.cribl_function == "get_pipelines_metrics":
                     yield {
                         "_time": result["endtime"],
                         "_raw": result,
-                        "worker_group": result.get("__worker_group"),
-                        "pipeline": result.get("id"),
-                        "eventsOut": result.get("eventsOut"),
-                        "eventsIn": result.get("eventsIn"),
-                        "eventsDropped": result.get("eventsDropped"),
+                        "worker_group": result.get("__worker_group", "unknown"),
+                        "pipeline": result.get("id", "unknown"),
+                        "eventsOut": result.get("eventsOut", 0),
+                        "eventsIn": result.get("eventsIn", 0),
+                        "eventsDropped": result.get("eventsDropped", 0),
                     }
 
                 elif self.cribl_function == "get_routes_metrics":
+                    # enrich with the route names
+                    route_id = result.get("id", "unknown")
+                    try:
+                        route_name = routes_dict[route_id]
+                        result["route"] = route_name
+                    except Exception as e:
+                        route_name = "unknown"
+
                     yield {
                         "_time": result["endtime"],
                         "_raw": result,
-                        "worker_group": result.get("__worker_group"),
-                        "route": result.get("id"),
-                        "bytesIn": result.get("bytesIn"),
-                        "bytesOut": result.get("bytesOut"),
-                        "eventsIn": result.get("eventsIn"),
-                        "eventsOut": result.get("eventsOut"),
-                        "eventsDropped": result.get("eventsDropped"),
+                        "worker_group": result.get("__worker_group", "unknown"),
+                        "route_id": route_id,
+                        "route": route_name,
+                        "bytesIn": result.get("bytesIn", 0),
+                        "bytesOut": result.get("bytesOut", 0),
+                        "eventsIn": result.get("eventsIn", 0),
+                        "eventsOut": result.get("eventsOut", 0),
+                        "eventsDropped": result.get("eventsDropped", 0),
                     }
 
                 elif self.cribl_function == "get_sources_metrics":
                     yield {
                         "_time": result["endtime"],
                         "_raw": result,
-                        "worker_group": result.get("__worker_group"),
-                        "source": result.get("input"),
-                        "bytesIn": result.get("bytesIn"),
-                        "eventsIn": result.get("eventsIn"),
-                        "health": result.get("health"),
+                        "worker_group": result.get("__worker_group", "unknown"),
+                        "source": result.get("input", "unknown"),
+                        "bytesIn": result.get("bytesIn", 0),
+                        "eventsIn": result.get("eventsIn", 0),
+                        "health": result.get("health", 0),
                     }
 
         logging.debug(
