@@ -512,7 +512,7 @@ class CriblRestHandler(GeneratingCommand):
                 }
 
             # for routes, we need to retrieve the routes definition first
-            elif self.cribl_function == "get_routes_metrics":
+            if self.cribl_function == "get_routes_metrics":
                 # get groups
                 groups_url = prepare_target_url_groups_for_cribl(account_info)
                 response_groups = requests.get(
