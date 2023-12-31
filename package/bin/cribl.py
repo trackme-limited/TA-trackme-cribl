@@ -293,7 +293,6 @@ class CriblRestHandler(GeneratingCommand):
                 response = requests.post(
                     target_url, headers=headers, data=json_data, verify=verify_ssl
                 )
-                logging.info(f"response.txt={response.text}")
 
             elif self.mode == "delete":
                 response = requests.delete(
@@ -388,10 +387,30 @@ class CriblRestHandler(GeneratingCommand):
 
             except json.JSONDecodeError:
                 # If the response isn't valid JSON, return the plain text of the response
-                yield {
-                    "_time": time.time(),
-                    "_raw": response.text,
-                }
+                logging.debug(
+                    f"response is plain text, attempting to detect JSON in response"
+                )
+
+                try:
+                    # Split the response text into individual JSON strings
+                    response_items = response.text.strip().split("\n")
+
+                    # Process each JSON string
+                    for item in response_items:
+                        try:
+                            json_item = json.loads(item)
+                            yield {
+                                "_time": json_item.get("_time", time.time()),
+                                "_raw": json_item,
+                            }
+                        except json.JSONDecodeError:
+                            logging.error(f"Invalid JSON: {item}")
+
+                except Exception as e:
+                    yield {
+                        "_time": time.time(),
+                        "_raw": response.text,
+                    }
 
         #
         # pre-built cribl function
@@ -493,7 +512,7 @@ class CriblRestHandler(GeneratingCommand):
                 }
 
             # for routes, we need to retrieve the routes definition first
-            if self.cribl_function == "get_routes_metrics":
+            elif self.cribl_function == "get_routes_metrics":
                 # get groups
                 groups_url = prepare_target_url_groups_for_cribl(account_info)
                 response_groups = requests.get(
