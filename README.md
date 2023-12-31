@@ -124,6 +124,16 @@ The Application provides a builtin custom command ``cribl`` allowing to interact
 - When working with configuration, use ``spath`` to automatically extracted the fields from the JSON API response
 - You can also perform ``POST`` calls using ``mode=post`` and the ``body`` option
 
+#### Performing events captures
+
+Example 1: capture events by index
+
+    | cribl account=cribl mode=post url="/api/v1/system/capture" body="{'filter': 'index.includes(\'eventgen-firewall\')', 'maxEvents': 15, 'level': 0}"
+
+Example 2: capture events by input id:
+
+    | cribl account=cribl mode=post url="/api/v1/system/capture" body="{'filter': '__inputId==\'splunk_hec:in_splunk_hec\'', 'maxEvents': 15, 'level': 0}"
+
 #### Get workers count & information
 
     | cribl account=cribl mode=get url="/api/v1/master/groups?fields=workerCount&product=stream" | spath
