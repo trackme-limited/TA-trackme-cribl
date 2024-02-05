@@ -154,6 +154,10 @@ Example 2: capture events by input id:
 
     | cribl account=cribl mode=get url="/api/v1/master/groups?product=stream" | spath
 
+#### Get all groups information in a single request (Cribl Stream only)
+
+    | cribl account=cribl mode=post url="/api/v1/master/groups?product=stream" cribl_function="get_groups_conf" | spath
+
 #### Get groups (only stream)
 
     | cribl account=cribl mode=get url="/api/v1/master/groups?product=stream" | spath

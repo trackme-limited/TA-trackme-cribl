@@ -144,6 +144,18 @@ def prepare_target_url_routes_for_cribl(account_info, group):
         return f"{cribl_onprem_leader_url.rstrip('/')}{routes_url}"
 
 
+def prepare_target_url_conf_for_cribl(account_info, group):
+    cribl_deployment_type = account_info.get("cribl_deployment_type")
+    conf_url = f"/api/v1/m/{group}/system/settings/conf"
+    if cribl_deployment_type == "cloud":
+        return f"https://main-{account_info.get('cribl_cloud_organization_id')}.cribl.cloud{conf_url}"
+    if cribl_deployment_type == "onprem":
+        cribl_onprem_leader_url = account_info.get("cribl_onprem_leader_url")
+        if not cribl_onprem_leader_url.startswith("https://"):
+            cribl_onprem_leader_url = "https://" + cribl_onprem_leader_url
+        return f"{cribl_onprem_leader_url.rstrip('/')}{conf_url}"
+
+
 def prepare_request_body(body):
     try:
         return json.dumps(json.loads(body), indent=1)
@@ -154,8 +166,8 @@ def prepare_request_body(body):
 @Configuration(distributed=False)
 class CriblRestHandler(GeneratingCommand):
     url = Option(
-        doc=""" **Syntax:** **The endpoint URL=**** **Description:** Mandatory, the endpoint URL""",
-        require=True,
+        doc=""" **Syntax:** **The endpoint URL=**** **Description:** Mandatory unless using a function, the endpoint URL""",
+        require=False,
         default=None,
         validate=validators.Match("url", r"^.*"),
     )
@@ -173,7 +185,7 @@ class CriblRestHandler(GeneratingCommand):
         default=None,
         validate=validators.Match(
             "mode",
-            r"^(?:get_global_metrics|get_destinations_metrics|get_pipelines_metrics|get_routes_metrics|get_sources_metrics)$",
+            r"^(?:get_global_metrics|get_destinations_metrics|get_pipelines_metrics|get_routes_metrics|get_sources_metrics|get_groups_conf)$",
         ),
     )
 
@@ -201,6 +213,12 @@ class CriblRestHandler(GeneratingCommand):
         # set logging_level
         logginglevel = logging.getLevelName(reqinfo["logging_level"])
         log.setLevel(logginglevel)
+
+        # if self.url is None and self.cribl_function is None, raise an error
+        if self.url is None and self.cribl_function is None:
+            raise Exception(
+                "You must provide an API URL or a prebuilt cribl function to use this command"
+            )
 
         # init headers
         headers = {}
@@ -555,6 +573,44 @@ class CriblRestHandler(GeneratingCommand):
                 response = requests.post(
                     target_url, headers=headers, json=data, verify=verify_ssl
                 )
+
+            elif self.cribl_function == "get_groups_conf":
+                # get groups
+                groups_url = prepare_target_url_groups_for_cribl(account_info)
+                response_groups = requests.get(
+                    groups_url, headers=headers, verify=verify_ssl
+                )
+                response_groups_items = response_groups.json().get("items")
+                # form a list of groups
+                groups_list = []
+                for item in response_groups_items:
+                    groups_list.append(item.get("id"))
+
+                # init a dict
+                groups_conf_dict = {}
+
+                # loop through the groups, and get the conf
+                for group in groups_list:
+                    conf_url = prepare_target_url_conf_for_cribl(account_info, group)
+                    response_conf = requests.get(
+                        conf_url, headers=headers, verify=verify_ssl
+                    )
+                    conf_items = response_conf.json()
+                    logging.debug(f"conf_items={conf_items}")
+
+                    # add to dict
+                    groups_conf_dict[group] = conf_items
+
+                # yield each group conf
+                for group, conf_items in groups_conf_dict.items():
+                    yield {
+                        "_time": time.time(),
+                        "group": group,
+                        "_raw": conf_items,
+                    }
+
+                # no need to continue further
+                return 0
 
             else:
                 response = requests.post(
