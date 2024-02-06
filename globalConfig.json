@@ -284,7 +284,7 @@
     "meta": {
         "name": "TA-trackme-cribl",
         "restRoot": "ta_trackme_cribl",
-        "version": "1.0.1",
+        "version": "1.0.2",
         "displayName": "TA-trackme-cribl",
         "schemaVersion": "0.0.3"
     }
