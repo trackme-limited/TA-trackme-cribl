@@ -166,8 +166,8 @@ def prepare_request_body(body):
 @Configuration(distributed=False)
 class CriblRestHandler(GeneratingCommand):
     url = Option(
-        doc=""" **Syntax:** **The endpoint URL=**** **Description:** Mandatory unless using a function, the endpoint URL""",
-        require=False,
+        doc=""" **Syntax:** **The endpoint URL=**** **Description:** Mandatory, the endpoint URL""",
+        require=True,
         default=None,
         validate=validators.Match("url", r"^.*"),
     )
@@ -213,12 +213,6 @@ class CriblRestHandler(GeneratingCommand):
         # set logging_level
         logginglevel = logging.getLevelName(reqinfo["logging_level"])
         log.setLevel(logginglevel)
-
-        # if self.url is None and self.cribl_function is None, raise an error
-        if self.url is None and self.cribl_function is None:
-            raise Exception(
-                "You must provide an API URL or a prebuilt cribl function to use this command"
-            )
 
         # init headers
         headers = {}
