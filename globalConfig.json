@@ -38,9 +38,6 @@
                                     "pattern": "^[a-zA-Z]\\w*$"
                                 }
                             ],
-                            "options": {
-                                "placeholder": "Required"
-                            },
                             "field": "name",
                             "help": "Enter a unique name for this account. (default: cribl)",
                             "required": true
@@ -240,41 +237,7 @@
                     "title": "Proxy Setup"
                 },
                 {
-                    "name": "logging",
-                    "entity": [
-                        {
-                            "type": "singleSelect",
-                            "label": "Log level",
-                            "options": {
-                                "disableSearch": true,
-                                "autoCompleteFields": [
-                                    {
-                                        "value": "DEBUG",
-                                        "label": "DEBUG"
-                                    },
-                                    {
-                                        "value": "INFO",
-                                        "label": "INFO"
-                                    },
-                                    {
-                                        "value": "WARNING",
-                                        "label": "WARNING"
-                                    },
-                                    {
-                                        "value": "ERROR",
-                                        "label": "ERROR"
-                                    },
-                                    {
-                                        "value": "CRITICAL",
-                                        "label": "CRITICAL"
-                                    }
-                                ]
-                            },
-                            "defaultValue": "INFO",
-                            "field": "loglevel"
-                        }
-                    ],
-                    "title": "Logging"
+                    "type": "loggingTab"
                 }
             ],
             "title": "Configuration",
@@ -284,9 +247,9 @@
     "meta": {
         "name": "TA-trackme-cribl",
         "restRoot": "ta_trackme_cribl",
-        "version": "1.0.3",
+        "version": "1.0.4",
         "displayName": "TA-trackme-cribl",
-        "schemaVersion": "0.0.3",
-        "_uccVersion": "5.39.1"
+        "schemaVersion": "0.0.8",
+        "_uccVersion": "5.48.2"
     }
 }
