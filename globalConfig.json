@@ -247,9 +247,9 @@
     "meta": {
         "name": "TA-trackme-cribl",
         "restRoot": "ta_trackme_cribl",
-        "version": "1.0.4",
+        "version": "1.0.5",
         "displayName": "TA-trackme-cribl",
-        "schemaVersion": "0.0.8",
-        "_uccVersion": "5.48.2"
+        "schemaVersion": "0.0.9",
+        "_uccVersion": "5.53.0"
     }
 }
