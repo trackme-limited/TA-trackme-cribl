@@ -123,6 +123,15 @@ The Application provides a builtin custom command ``cribl`` allowing to interact
 - The ``cribl`` custom command automatically takes this into account
 - When working with configuration, use ``spath`` to automatically extracted the fields from the JSON API response
 - You can also perform ``POST`` calls using ``mode=post`` and the ``body`` option
+- You can also add the argument ``run_test=True`` which will report the response time in seconds (runtime_sec) and the status (success or failure) of the query, allowing to use the command to validate the connectity, authentication and execution of a query against Cribl, for testing and monitoring purposes
+
+#### Testing
+
+This example allows testing the Cribl API:
+
+    | cribl account=cribl mode=get url="/api/v1/master/group?fields=workerCount&product=stream" run_test=True
+
+*the response time is reported as the field runtime_sec and status as status
 
 #### Performing events captures
 
